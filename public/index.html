@@ -174,19 +174,8 @@ function esc(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 const Q_RE = /[?？]|까요|있나요|있을까요|어디|어떻게|혹시.*\.?|추천.*주|알려주|해주세요|어떡|어떻해|어떡해|모르겠|어디서|뭘|뭐가|고민|힘들|걱정|도와/;
 
 // ── 1. Keyword extraction ─────────────────────────────────
-async function getKeywords(query){
-  try{
-    const data = await callClaude({
-      max_tokens:150,
-      system:`사용자 질문에서 한국어 육아 카카오톡 대화 검색용 핵심 키워드를 추출하세요.
-JSON만 반환: {"keywords":["단어1","단어2",...]}
-규칙: 유의어 포함, 3~5개, 조사 제거, 명사/핵심어 위주.
-예) "소아정신과 추천해줘" → {"keywords":["소아정신과","정신과","병원","추천"]}
-예) "ADHD" → {"keywords":["ADHD","주의력","집중","과잉행동","검사"]}`,
-      messages:[{role:'user',content:query}]
-    });
-    return JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
-  }catch{return simpleKeywords(query);}
+function getKeywords(query){
+  return simpleKeywords(query);
 }
 
 function simpleKeywords(q){
@@ -348,7 +337,7 @@ async function doSearch(){
 
   try{
     // Step 1
-    const {keywords} = await getKeywords(query);
+    const {keywords} = getKeywords(query);
     updateProg(2);
 
     // Step 2
