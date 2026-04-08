@@ -236,7 +236,7 @@ async function extractQA(query, threads){
   }).join('\n\n');
 
   const data = await callClaude({
-    max_tokens: 1200,
+    max_tokens: 2500,
     system:`육아 커뮤니티 대화에서 고민과 답변을 추출하세요. JSON만 반환, 큰따옴표(")와 역슬래시(\\) 사용 금지.
 형식: {"summary":"8~12문장 요약","qa_pairs":[{"question":"고민 1~2문장","answers":["답변1","답변2"]}],"disclaimer":"커뮤니티 경험 공유이며 전문가 상담을 대체하지 않아요."}
 규칙: 주제 무관 대화 제외. 익명 유지. 정보로 가공. qa_pairs 최대 8개, answers 최대 7개. 조언·경험·추천 모두 포함. 줄바꿈 대신 공백. 각 답변은 핵심 내용 뒤에 이유나 경험·조건을 한 문장 덧붙여 1.5~2문장 분량으로 작성하세요 (예: 핵심 조언. 그 이유나 경험 추가).`,
@@ -325,11 +325,14 @@ async function doSearch(){
   // 캐시 확인 (같은 키워드+키 조합으로 캐시)
   const cacheKey = query.trim().toLowerCase();
   if(searchCache.has(cacheKey)){
-    const {result, threads} = searchCache.get(cacheKey);
-    renderResult(query, result, threads);
-    // 캐시 배지 표시
-    const chip = document.querySelector('.chip-wrap');
-    if(chip) chip.innerHTML += ' <span style="font-size:0.72rem;color:var(--accent);background:var(--accent-light);padding:2px 8px;border-radius:10px;margin-left:6px">⚡ 캐시</span>';
+    const cached = searchCache.get(cacheKey);
+    renderResult(query, cached.result, cached.threads);
+    setTimeout(()=>{
+      const chip = document.querySelector('.chip-wrap');
+      if(chip && !chip.querySelector('.cache-badge')){
+        chip.innerHTML += ' <span class="cache-badge" style="font-size:0.72rem;color:var(--accent);background:var(--accent-light);padding:2px 8px;border-radius:10px;margin-left:6px">⚡ 캐시</span>';
+      }
+    }, 100);
     return;
   }
 
