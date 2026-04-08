@@ -189,9 +189,13 @@ function collectThreads(keywords, max=6){
   // Score every message: how many keywords does it (or its close window) match?
   const scored = MSGS.map((m,i)=>{
     const t = m.m.toLowerCase();
-    const direct = kws.filter(k=>t.includes(k)).length;
-    if(direct===0) return null;
-    return {i, score: direct + (Q_RE.test(m.m)?0.5:0), isQ: Q_RE.test(m.m)};
+    // 모든 키워드가 포함된 메시지 우선, 하나라도 포함되면 후보
+    const matchAll = kws.every(k=>t.includes(k));
+    const matchAny = kws.filter(k=>t.includes(k)).length;
+    if(matchAny===0) return null;
+    // 모든 키워드 매칭이면 점수 높게
+    const score = matchAll ? 10 : matchAny;
+    return {i, score: score + (Q_RE.test(m.m)?0.5:0), isQ: Q_RE.test(m.m), matchAll};
   }).filter(Boolean);
 
   if(!scored.length) return [];
@@ -206,7 +210,7 @@ function collectThreads(keywords, max=6){
   for(const seed of seeds){
     if(threads.length >= max) break;
     const start = Math.max(0, seed.i - 1);
-    const end   = Math.min(MSGS.length, seed.i + 16);
+    const end   = Math.min(MSGS.length, seed.i + 11);
     const overlap = [...Array(end-start)].filter((_,k)=>used.has(start+k)).length;
     if(overlap > 18) continue;
     for(let j=start;j<end;j++) used.add(j);
@@ -242,7 +246,7 @@ async function extractQA(query, threads){
 규칙: 검색 주제와 직접 관련 없는 대화는 철저히 무시(예: 소아정신과 검색 시 여행·음식·일상 내용 절대 포함 금지). 익명 유지. 정보로 가공. qa_pairs 최대 8개, answers 최대 7개. 조언·경험·추천 모두 포함. 줄바꿈 대신 공백. 각 답변은 핵심 내용 뒤에 이유나 경험을 한 문장 덧붙여 작성.`,
     messages:[{
       role:'user',
-      content:`검색 주제: ${sanitize(query)}\n\n아래 대화에서 고민과 답변을 최대한 많이 추출해주세요:\n\n${rawContext}`
+      content:`검색 주제: [${sanitize(query)}]\n\n중요: 반드시 [${sanitize(query)}]에 직접 관련된 내용만 추출하세요. 관련 없는 내용(다른 주제의 고민, 여행, 일상)은 완전히 무시하세요.\n\n대화:\n${rawContext}`
     }]
   });
 
