@@ -194,7 +194,7 @@ function simpleKeywords(q){
 }
 
 // ── 2. Candidate thread collection ───────────────────────
-function collectThreads(keywords, max=12){
+function collectThreads(keywords, max=6){
   const kws = keywords.map(k=>k.toLowerCase());
 
   // Score every message: how many keywords does it (or its close window) match?
@@ -217,7 +217,7 @@ function collectThreads(keywords, max=12){
   for(const seed of seeds){
     if(threads.length >= max) break;
     const start = Math.max(0, seed.i - 1);
-    const end   = Math.min(MSGS.length, seed.i + 21);
+    const end   = Math.min(MSGS.length, seed.i + 16);
     const overlap = [...Array(end-start)].filter((_,k)=>used.has(start+k)).length;
     if(overlap > 18) continue;
     for(let j=start;j<end;j++) used.add(j);
@@ -239,15 +239,15 @@ function sanitize(text){
 async function extractQA(query, threads){
   // 번호 붙인 줄별 포맷으로 대화 흐름 보존
   const rawContext = threads.map((t,i)=>{
-    const lines = t.msgs.slice(0,20).map((m,j)=>{
-      const txt = sanitize(m.m).slice(0,160);
+    const lines = t.msgs.slice(0,10).map((m,j)=>{
+      const txt = sanitize(m.m).slice(0,100);
       return `  ${j+1}. ${txt}`;
     }).join('\n');
     return `[대화묶음 ${i+1}]\n${lines}`;
   }).join('\n\n');
 
   const data = await callClaude({
-    max_tokens: 2500,
+    max_tokens: 1200,
     system:`육아 커뮤니티 대화에서 고민과 답변을 추출하세요. JSON만 반환, 큰따옴표(")와 역슬래시(\\) 사용 금지.
 형식: {"summary":"8~12문장 요약","qa_pairs":[{"question":"고민 1~2문장","answers":["답변1","답변2"]}],"disclaimer":"커뮤니티 경험 공유이며 전문가 상담을 대체하지 않아요."}
 규칙: 주제 무관 대화 제외. 익명 유지. 정보로 가공. qa_pairs 최대 8개, answers 최대 7개. 조언·경험·추천 모두 포함. 줄바꿈 대신 공백. 각 답변은 핵심 내용 뒤에 이유나 경험·조건을 한 문장 덧붙여 1.5~2문장 분량으로 작성하세요 (예: 핵심 조언. 그 이유나 경험 추가).`,
